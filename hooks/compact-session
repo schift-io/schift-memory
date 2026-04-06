@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+# Stop hook: Haiku가 대화 요약 구조화 → 로컬 저장
+set -euo pipefail
+
+COMPACT_DIR="$HOME/.schift/memory/compact/session"
+
+input=$(cat 2>/dev/null || echo "{}")
+
+# Stop 이벤트에서 대화 요약 추출
+raw_summary=$(node -e "
+  try {
+    const d = JSON.parse(process.argv[1]);
+    const s = d.transcript_summary || d.summary || d.content || '';
+    if (s) process.stdout.write(s);
+  } catch {}
+" "$input" 2>/dev/null || echo "")
+
+[ -z "$raw_summary" ] && echo '{}' && exit 0
+
+session_id="cc_$(date +%s)_$(head -c 4 /dev/urandom | xxd -p)"
+date_iso=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+mkdir -p "$COMPACT_DIR"
+
+# Haiku로 구조화된 요약 생성
+structured=$(claude -p --model haiku --bare --allowedTools "" "아래 대화 요약을 구조화해줘. 형식:
+
+## Summary
+한 단락으로 전체 핵심 요약
+
+## 주요 작업
+- ...
+
+## 결정 사항
+- ...
+
+## 미완료/후속 작업
+- ...
+
+---
+${raw_summary}" 2>/dev/null || printf '## Summary\n%s\n' "$raw_summary")
+
+cat > "${COMPACT_DIR}/${session_id}.md" <<EOMD
+---
+session_id: ${session_id}
+date: ${date_iso}
+synced: false
+---
+
+# Session Compact
+
+${structured}
+
+EOMD
+
+echo '{}'

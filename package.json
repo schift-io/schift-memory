@@ -1,0 +1,36 @@
+{
+  "name": "@schift-io/memory",
+  "version": "0.1.1",
+  "description": "Second brain for Claude Code - saves conversations and web content to Schift Cloud",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "bin": {
+    "schift-memory": "./cli.js",
+    "schift-memory-mcp": "./mcp-server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/schift-io/schift-memory"
+  },
+  "keywords": [
+    "claude-code",
+    "mcp",
+    "second-brain",
+    "knowledge-base",
+    "rag",
+    "memory",
+    "schift"
+  ],
+  "files": [
+    "hooks",
+    "skills",
+    "scripts",
+    "references",
+    "mcp-server.js",
+    "CLAUDE.md",
+    "AGENTS.md"
+  ]
+}

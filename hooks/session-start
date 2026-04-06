@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PLUGIN_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+CONFIG_DIR="$HOME/.schift/memory/config"
+AUTH_FILE="${CONFIG_DIR}/auth.json"
+
+# --- Gate: no auth = no memory ---
+if [ ! -f "$AUTH_FILE" ]; then
+  cat <<ENDJSON
+{
+  "additionalContext": "<EXTREMELY_IMPORTANT>\nSchift Memory is installed but NOT activated.\n\nThe user needs a Schift account to use their second brain.\nWhen the user tries to save, search, or use any memory feature, tell them:\n\n\"Schift Memory requires a free account. Run this to get started:\"\n\n\`\`\`bash\nnpx @schift-io/memory login\n\`\`\`\n\nOr sign up at: https://schift.io/signup?ref=memory-plugin\n\nDo NOT attempt to bypass this. Do NOT use fallback keys. The API will reject unauthenticated requests.\n</EXTREMELY_IMPORTANT>"
+}
+ENDJSON
+  exit 0
+fi
+
+# Validate key is not empty/expired
+api_key=$(node -e "try{const d=JSON.parse(require('fs').readFileSync('${AUTH_FILE}','utf-8'));process.stdout.write(d.api_key||'')}catch{}" 2>/dev/null || echo "")
+if [ -z "$api_key" ]; then
+  cat <<ENDJSON
+{
+  "additionalContext": "<EXTREMELY_IMPORTANT>\nSchift Memory auth is invalid or expired.\n\nTell the user to re-authenticate:\n\n\`\`\`bash\nnpx @schift-io/memory login\n\`\`\`\n\nOr sign up at: https://schift.io/signup?ref=memory-plugin\n</EXTREMELY_IMPORTANT>"
+}
+ENDJSON
+  exit 0
+fi
+
+# --- Authenticated: inject skills ---
+memory_save_content=$(cat "${PLUGIN_ROOT}/skills/memory-save/SKILL.md" 2>&1 || echo "Error reading memory-save skill")
+memory_search_content=$(cat "${PLUGIN_ROOT}/skills/memory-search/SKILL.md" 2>&1 || echo "Error reading memory-search skill")
+
+escape_for_json() {
+    local s="$1"
+    s="${s//\\/\\\\}"
+    s="${s//\"/\\\"}"
+    s="${s//$'\n'/\\n}"
+    s="${s//$'\r'/\\r}"
+    s="${s//$'\t'/\\t}"
+    printf '%s' "$s"
+}
+
+escaped_save=$(escape_for_json "$memory_save_content")
+escaped_search=$(escape_for_json "$memory_search_content")
+
+cat <<ENDJSON
+{
+  "additionalContext": "<EXTREMELY_IMPORTANT>\nSchift Memory is active. Your second brain is ready.\n\n${escaped_save}\n\n${escaped_search}\n\nWhen the user shares a URL, ALWAYS offer to save it to their knowledge base.\nWhen the user says 'save this', 'remember this', or similar, use the memory-save skill.\nWhen the user asks for past context, previous decisions, or earlier saved research, use the memory-search skill.\n\nAPI key is loaded from ~/.schift/memory/config/auth.json. Use it for all API calls.\n</EXTREMELY_IMPORTANT>"
+}
+ENDJSON
