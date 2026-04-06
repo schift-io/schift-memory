@@ -39,6 +39,72 @@ async function apiCall(path, body) {
   return resp.json();
 }
 
+// --- Local search (grep fallback) ---
+import { readdirSync, statSync } from 'fs';
+
+function searchLocal(query, topK = 10, domain) {
+  const root = join(homedir(), '.schift', 'memory');
+  const dirs = ['compact/session', 'sources/web', 'sources/search', 'sources/external'];
+  const keywords = query.toLowerCase().split(/\s+/).filter(k => k.length > 1);
+  const results = [];
+
+  for (const dir of dirs) {
+    const fullDir = join(root, dir);
+    let files;
+    try { files = readdirSync(fullDir); } catch { continue; }
+
+    for (const file of files) {
+      if (!file.endsWith('.md')) continue;
+      const filePath = join(fullDir, file);
+      try {
+        const stat = statSync(filePath);
+        if (!stat.isFile()) continue;
+        const content = readFileSync(filePath, 'utf-8');
+
+        // Domain filter
+        if (domain) {
+          const domainMatch = content.match(/^domain:\s*(.+)$/m);
+          if (domainMatch && domainMatch[1].trim() !== domain) continue;
+        }
+
+        // Score by keyword match count
+        const lower = content.toLowerCase();
+        let score = 0;
+        for (const kw of keywords) {
+          const idx = lower.indexOf(kw);
+          if (idx !== -1) score++;
+        }
+        if (score === 0) continue;
+
+        // Extract frontmatter metadata
+        const meta = {};
+        const fmMatch = content.match(/^---\n([\s\S]*?)\n---/);
+        if (fmMatch) {
+          for (const line of fmMatch[1].split('\n')) {
+            const [k, ...v] = line.split(':');
+            if (k && v.length) meta[k.trim()] = v.join(':').trim();
+          }
+        }
+
+        // Extract body (skip frontmatter)
+        const body = content.replace(/^---[\s\S]*?---\n?/, '').trim();
+        const snippet = body.slice(0, 500);
+
+        results.push({
+          file: filePath,
+          score,
+          metadata: meta,
+          snippet,
+          modified: stat.mtime.toISOString(),
+        });
+      } catch { continue; }
+    }
+  }
+
+  results.sort((a, b) => b.score - a.score || new Date(b.modified) - new Date(a.modified));
+  return results.slice(0, topK);
+}
+
 // MCP stdio protocol
 const TOOLS = [
   {
@@ -84,6 +150,19 @@ const TOOLS = [
     },
   },
   {
+    name: 'search_memory_local',
+    description: 'Search local memory files (offline, no quota). Falls back grep over ~/.schift/memory/ markdown files. Lower quality than cloud vector search but always available.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'Search keywords (matched against file contents)' },
+        top_k: { type: 'number', description: 'Max results', default: 10 },
+        domain: { type: 'string', description: 'Filter by domain (from frontmatter)' },
+      },
+      required: ['query'],
+    },
+  },
+  {
     name: 'memory_status',
     description: 'Check Schift Memory connection status and account info.',
     inputSchema: { type: 'object', properties: {} },
@@ -112,13 +191,31 @@ async function handleToolCall(name, args) {
         topic: args.topic,
       });
 
-    case 'search_memory':
-      return apiCall('/v1/query', {
-        query: args.query,
-        collection: 'localbucket',
-        top_k: args.top_k || 5,
-        ...(args.domain ? { filter: { domain: args.domain } } : {}),
-      });
+    case 'search_memory': {
+      try {
+        return await apiCall('/v1/query', {
+          query: args.query,
+          collection: 'localbucket',
+          top_k: args.top_k || 5,
+          ...(args.domain ? { filter: { domain: args.domain } } : {}),
+        });
+      } catch (e) {
+        const isQuota = e.message && (e.message.includes('402') || e.message.includes('403'));
+        const local = searchLocal(args.query, args.top_k || 10, args.domain);
+        return {
+          source: 'local_fallback',
+          reason: isQuota ? 'quota_exceeded' : 'cloud_unavailable',
+          results: local,
+          upgrade_hint: isQuota ? 'Free quota exceeded. Upgrade at https://schift.io/pricing' : undefined,
+        };
+      }
+    }
+
+    case 'search_memory_local':
+      return {
+        source: 'local',
+        results: searchLocal(args.query, args.top_k || 10, args.domain),
+      };
 
     case 'memory_status': {
       const auth = loadAuth();
