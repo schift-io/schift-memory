@@ -1,15 +1,11 @@
 #!/usr/bin/env bash
-# Schift Memory login - get API key from Schift Cloud
+# Schift Memory login - OAuth browser flow with manual fallback
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CONFIG_DIR="$HOME/.schift/memory/config"
 AUTH_FILE="${CONFIG_DIR}/auth.json"
 SCHIFT_CLOUD="https://api.schift.io"
-
-echo ""
-echo "  Schift Memory Login"
-echo "  ==================="
-echo ""
 
 # Check if already logged in
 if [ -f "$AUTH_FILE" ]; then
@@ -19,13 +15,33 @@ if [ -f "$AUTH_FILE" ]; then
       -H "Authorization: Bearer ${existing_key}" \
       "${SCHIFT_CLOUD}/v1/organizations/me" 2>/dev/null || echo "000")
     if [ "$validate" = "200" ]; then
+      echo ""
       echo "  Already logged in. Account is valid."
       echo "  To re-login, delete: ${AUTH_FILE}"
-      exit 0
+      echo ""
+      # Still run init + hooks in case they're not set up
+      "${SCRIPT_DIR}/init.sh"
+      exec "${SCRIPT_DIR}/install-hooks.sh"
     fi
   fi
 fi
 
+echo ""
+echo "  Schift Memory Login"
+echo "  ==================="
+echo ""
+
+# Try OAuth browser flow first
+if command -v node >/dev/null 2>&1; then
+  node "${SCRIPT_DIR}/login.js"
+  login_exit=$?
+  if [ "$login_exit" -eq 0 ] && [ -f "$AUTH_FILE" ]; then
+    "${SCRIPT_DIR}/init.sh"
+    exec "${SCRIPT_DIR}/install-hooks.sh"
+  fi
+fi
+
+# Fallback: manual key entry
 echo "  Enter your Schift API key."
 echo "  (Get one at: https://schift.io/signup?ref=memory-plugin)"
 echo ""
@@ -64,6 +80,5 @@ echo "  Logged in! Running setup..."
 echo ""
 
 # Auto-run init + install hooks
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 "${SCRIPT_DIR}/init.sh"
 exec "${SCRIPT_DIR}/install-hooks.sh"
