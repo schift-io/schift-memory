@@ -4,9 +4,10 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const cmd = process.argv[2] || 'help';
+const cmd = process.argv[2] || 'setup';
 
 const commands = {
+  setup:  join(__dirname, 'scripts', 'login.sh'),
   login:  join(__dirname, 'scripts', 'login.sh'),
   init:   join(__dirname, 'scripts', 'init.sh'),
   install: join(__dirname, 'scripts', 'install-hooks.sh'),
@@ -26,9 +27,8 @@ if (cmd === 'help' || cmd === '--help' || cmd === '-h') {
     install   Install Claude Code hooks (auto-save on WebFetch, WebSearch, etc.)
     status    Check connection status
 
-  Setup (first time):
-    npx @schift-io/memory login
-    npx @schift-io/memory install
+  Quick setup (first time):
+    npx @schift-io/memory
 `);
   process.exit(0);
 }

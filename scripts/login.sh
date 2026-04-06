@@ -63,6 +63,7 @@ chmod 600 "$AUTH_FILE"
 echo "  Logged in! Running setup..."
 echo ""
 
-# Auto-run init
+# Auto-run init + install hooks
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-exec "${SCRIPT_DIR}/init.sh"
+"${SCRIPT_DIR}/init.sh"
+exec "${SCRIPT_DIR}/install-hooks.sh"
