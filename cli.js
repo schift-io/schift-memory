@@ -20,6 +20,7 @@ if (cmd === 'help' || cmd === '--help' || cmd === '-h') {
   Schift Memory - Second brain for Claude Code
 
   Usage: npx @schift-io/memory <command>
+         npx --package @schift-io/memory schift-memory <command>
 
   Commands:
     login     Sign in with your Schift API key

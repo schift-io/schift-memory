@@ -8,6 +8,7 @@
     "node": ">=18"
   },
   "bin": {
+    "memory": "./cli.js",
     "schift-memory": "./cli.js",
     "schift-memory-mcp": "./mcp-server.js"
   },
