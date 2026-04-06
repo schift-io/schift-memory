@@ -18,6 +18,24 @@ npx @schift-io/memory login    # sign up + API key
 npx @schift-io/memory init     # bootstrap cloud bucket
 ```
 
+## Release / Publish
+
+- source of truth: monorepo `packages/schift-memory/`
+- public repo: `schift-io/schift-memory`
+- monorepo `main`에 `packages/schift-memory/**` 변경이 들어가면 `.github/workflows/sync-public-repos.yml`의 `sync-schift-memory` job이 public repo로 sync한다
+- npm publish는 public repo에서만 일어난다
+- **버전은 git tag가 진실의 원천**이다. `package.json` version을 수동으로 올리지 않는다
+- release 방법:
+
+```bash
+git clone https://github.com/schift-io/schift-memory.git
+cd schift-memory
+git tag v0.2.1
+git push origin v0.2.1
+```
+
+- 위 tag push가 `Publish schift-memory to npm` workflow를 트리거하고, workflow 내부에서 `npm pkg set version="$VERSION"` 후 publish한다
+
 ## What's on the user's machine
 
 ```
