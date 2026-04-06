@@ -108,7 +108,7 @@ function searchLocal(query, topK = 10, domain) {
 // MCP stdio protocol
 const TOOLS = [
   {
-    name: 'save_url',
+    name: 'save_to_schift_memory',
     description: 'Save a URL to your Schift knowledge base. Fetches content, extracts markdown, embeds, and makes it searchable.',
     inputSchema: {
       type: 'object',
@@ -124,7 +124,7 @@ const TOOLS = [
     },
   },
   {
-    name: 'save_note',
+    name: 'save_note_to_schift_memory',
     description: 'Save a note or conversation insight to your Schift knowledge base.',
     inputSchema: {
       type: 'object',
@@ -137,8 +137,8 @@ const TOOLS = [
     },
   },
   {
-    name: 'search_memory',
-    description: 'Search your Schift knowledge base for past conversations, saved URLs, notes, and documents.',
+    name: 'search_schift_memory',
+    description: 'Search your Schift second brain. Finds past conversations, saved URLs, research notes, and documents using vector search. Use when the user asks about previous discussions, decisions, or saved knowledge.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -150,8 +150,8 @@ const TOOLS = [
     },
   },
   {
-    name: 'search_memory_local',
-    description: 'Search local memory files (offline, no quota). Falls back grep over ~/.schift/memory/ markdown files. Lower quality than cloud vector search but always available.',
+    name: 'search_schift_memory_offline',
+    description: 'Search local Schift memory files offline (no quota, no network). Keyword search over saved markdown files. Always available even when quota is exceeded or offline.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -171,7 +171,7 @@ const TOOLS = [
 
 async function handleToolCall(name, args) {
   switch (name) {
-    case 'save_url': {
+    case 'save_to_schift_memory': {
       try { new URL(args.url); } catch { throw new Error(`Invalid URL: ${args.url}`); }
       if (!/^https?:$/.test(new URL(args.url).protocol)) throw new Error('Only http/https URLs are supported');
       return apiCall('/v1/memory/ingest-url', {
@@ -183,7 +183,7 @@ async function handleToolCall(name, args) {
         findings: args.findings,
       });}
 
-    case 'save_note':
+    case 'save_note_to_schift_memory':
       return apiCall('/v1/memory/compact', {
         session_id: `note_${Date.now()}`,
         summary: args.content,
@@ -191,7 +191,7 @@ async function handleToolCall(name, args) {
         topic: args.topic,
       });
 
-    case 'search_memory': {
+    case 'search_schift_memory': {
       try {
         return await apiCall('/v1/query', {
           query: args.query,
@@ -211,7 +211,7 @@ async function handleToolCall(name, args) {
       }
     }
 
-    case 'search_memory_local':
+    case 'search_schift_memory_offline':
       return {
         source: 'local',
         results: searchLocal(args.query, args.top_k || 10, args.domain),
