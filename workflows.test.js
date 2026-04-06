@@ -88,11 +88,16 @@ function hasSyncTarget(lines, expectedRepository, expectedPublishDir) {
 
 test('sync-public-repos.yml should include schift-memory path and target sync settings', async () => {
   const workflow = await readFile(join(repoRoot, '.github', 'workflows', 'sync-public-repos.yml'), 'utf8');
+  const lines = workflow.split('\n');
 
   assert.ok(workflow.includes('packages/schift-memory/**'));
   assert.ok(workflow.includes('sync-schift-memory:'));
   assert.ok(workflow.includes('external_repository: schift-io/schift-memory'));
   assert.ok(workflow.includes('publish_dir: ./packages/schift-memory'));
+  assert.ok(
+    lines.some((line) => line.trim() === 'exclude_assets:'),
+    'Expected sync workflow to clear peaceiris default exclude_assets so .github is preserved',
+  );
 });
 
 test('ci.yml should track schift-memory changes and run package/workflows validation', async () => {
