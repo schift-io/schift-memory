@@ -1,6 +1,6 @@
 # @schift-io/memory
 
-Second brain plugin for Claude Code. Saves conversations, web content, and notes to Schift Cloud.
+Second brain plugin for Dot. Saves conversations, web content, and notes to Schift Cloud.
 
 **Requires a Schift account. No local-only mode. No fallback keys.**
 
@@ -14,7 +14,7 @@ Second brain plugin for Claude Code. Saves conversations, web content, and notes
 ## Setup
 
 ```bash
-npx @schift-io/memory login    # sign up + API key
+schift auth login              # sign up + API key (shared with CLI)
 npx @schift-io/memory init     # bootstrap cloud bucket
 ```
 
@@ -39,9 +39,11 @@ git push origin v0.2.1
 ## What's on the user's machine
 
 ```
+~/.schift/
+  config.json              # API key (shared with schift CLI)
 ~/.schift/memory/
   config/
-    auth.json              # API key
+    auth.json              # API key (auto-migrated to ~/.schift/config.json)
   sources/
     web/                   # Web page markdown (replica)
   compact/

@@ -12,14 +12,16 @@ Search your second brain for previously saved content.
 Before ANY search operation, verify auth exists:
 
 ```bash
-cat ~/.schift/memory/config/auth.json
+cat ~/.schift/config.json
 ```
 
-If the file is missing or has no `api_key`, STOP and tell the user:
+If missing or no `api_key`, also try `~/.schift/memory/config/auth.json`.
 
-> Schift Memory requires a free account.
-> Run: `npx @schift-io/memory login`
-> Or sign up: https://schift.io/signup?ref=memory-plugin
+If neither has a key, STOP and tell the user:
+
+> Schift requires a free account.
+> Run: `schift auth login`
+> Or sign up: https://schift.io/signup
 
 Do NOT proceed without a valid API key. There is no local-only mode.
 
@@ -33,8 +35,26 @@ Do NOT proceed without a valid API key. There is no local-only mode.
 
 Read auth first:
 ```bash
-SCHIFT_KEY=$(python3 -c "import json; print(json.load(open('$HOME/.schift/memory/config/auth.json'))['api_key'])")
-SCHIFT_API=$(python3 -c "import json; print(json.load(open('$HOME/.schift/memory/config/auth.json')).get('cloud_url','https://api.schift.io'))")
+# Primary: schift CLI config. Fallback: memory plugin config.
+SCHIFT_KEY=$(python3 -c "
+import json, os
+for p in [os.path.expanduser('~/.schift/config.json'), os.path.expanduser('~/.schift/memory/config/auth.json')]:
+    try:
+        d = json.load(open(p))
+        k = d.get('api_key','')
+        if k: print(k); break
+    except: pass
+")
+SCHIFT_API=$(python3 -c "
+import json, os
+for p, f in [(os.path.expanduser('~/.schift/config.json'),'api_url'), (os.path.expanduser('~/.schift/memory/config/auth.json'),'cloud_url')]:
+    try:
+        d = json.load(open(p))
+        u = d.get(f,'')
+        if u: print(u); break
+    except: pass
+else: print('https://api.schift.io')
+")
 ```
 
 ### Query (recommended)

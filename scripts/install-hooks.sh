@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Install Schift Memory hooks into Claude Code settings
+# Install Schift Memory hooks into Dot settings
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -26,7 +26,7 @@ mkdir -p "$HOME/.schift/memory"/{config,sources/web,sources/search,sources/exter
 mkdir -p "$HOME/.claude"
 [ ! -f "$SETTINGS_FILE" ] && echo '{}' > "$SETTINGS_FILE"
 
-# Install hooks into Claude Code settings using node
+# Install hooks into Dot settings using node
 node -e "
   const fs = require('fs');
   const settingsPath = process.argv[1];
@@ -104,5 +104,5 @@ echo "    sources/web/       - fetched URLs"
 echo "    sources/search/    - search results"
 echo "    sources/external/  - external tool results"
 echo ""
-echo "  Done! Restart Claude Code to activate."
+echo "  Done! Restart Dot to activate."
 echo ""

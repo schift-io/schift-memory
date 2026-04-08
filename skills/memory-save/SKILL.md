@@ -13,14 +13,16 @@ When the user shares content worth remembering, save it as a contextualized know
 Before ANY save operation, verify auth exists:
 
 ```bash
-cat ~/.schift/memory/config/auth.json
+cat ~/.schift/config.json
 ```
 
-If missing or no `api_key`, STOP:
+If missing or no `api_key`, also try `~/.schift/memory/config/auth.json`.
 
-> Schift Memory requires a free account.
-> Run: `npx @schift-io/memory login`
-> Or sign up: https://schift.io/signup?ref=memory-plugin
+If neither has a key, STOP:
+
+> Schift requires a free account.
+> Run: `schift auth login`
+> Or sign up: https://schift.io/signup
 
 Do NOT proceed without a valid API key. There is no local-only mode.
 
@@ -38,8 +40,26 @@ This is NOT a simple bookmark. You produce a **contextualized knowledge document
 ### Step 1: Read auth
 
 ```bash
-SCHIFT_KEY=$(python3 -c "import json; print(json.load(open('$HOME/.schift/memory/config/auth.json'))['api_key'])")
-SCHIFT_API=$(python3 -c "import json; print(json.load(open('$HOME/.schift/memory/config/auth.json')).get('cloud_url','https://api.schift.io'))")
+# Primary: schift CLI config. Fallback: memory plugin config.
+SCHIFT_KEY=$(python3 -c "
+import json, os
+for p in [os.path.expanduser('~/.schift/config.json'), os.path.expanduser('~/.schift/memory/config/auth.json')]:
+    try:
+        d = json.load(open(p))
+        k = d.get('api_key','')
+        if k: print(k); break
+    except: pass
+")
+SCHIFT_API=$(python3 -c "
+import json, os
+for p, f in [(os.path.expanduser('~/.schift/config.json'),'api_url'), (os.path.expanduser('~/.schift/memory/config/auth.json'),'cloud_url')]:
+    try:
+        d = json.load(open(p))
+        u = d.get(f,'')
+        if u: print(u); break
+    except: pass
+else: print('https://api.schift.io')
+")
 ```
 
 ### Step 2: Fetch and analyze the URL

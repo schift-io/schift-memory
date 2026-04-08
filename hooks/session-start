@@ -4,25 +4,14 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PLUGIN_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
-CONFIG_DIR="$HOME/.schift/memory/config"
-AUTH_FILE="${CONFIG_DIR}/auth.json"
+# --- Unified auth: schift CLI config -> memory config -> empty ---
+source "${PLUGIN_ROOT}/scripts/read-auth.sh"
+api_key="$SCHIFT_API_KEY"
 
-# --- Gate: no auth = no memory ---
-if [ ! -f "$AUTH_FILE" ]; then
-  cat <<ENDJSON
-{
-  "additionalContext": "<EXTREMELY_IMPORTANT>\nSchift Memory is installed but NOT activated.\n\nThe user needs a Schift account to use their second brain.\nWhen the user tries to save, search, or use any memory feature, tell them:\n\n\"Schift Memory requires a free account. Run this to get started:\"\n\n\`\`\`bash\nnpx @schift-io/memory login\n\`\`\`\n\nOr sign up at: https://schift.io/signup?ref=memory-plugin\n\nDo NOT attempt to bypass this. Do NOT use fallback keys. The API will reject unauthenticated requests.\n</EXTREMELY_IMPORTANT>"
-}
-ENDJSON
-  exit 0
-fi
-
-# Validate key is not empty/expired
-api_key=$(node -e "try{const d=JSON.parse(require('fs').readFileSync('${AUTH_FILE}','utf-8'));process.stdout.write(d.api_key||'')}catch{}" 2>/dev/null || echo "")
 if [ -z "$api_key" ]; then
   cat <<ENDJSON
 {
-  "additionalContext": "<EXTREMELY_IMPORTANT>\nSchift Memory auth is invalid or expired.\n\nTell the user to re-authenticate:\n\n\`\`\`bash\nnpx @schift-io/memory login\n\`\`\`\n\nOr sign up at: https://schift.io/signup?ref=memory-plugin\n</EXTREMELY_IMPORTANT>"
+  "additionalContext": "<EXTREMELY_IMPORTANT>\nSchift Memory is installed but NOT activated.\n\nThe user needs a Schift account to use their second brain.\nWhen the user tries to save, search, or use any memory feature, tell them:\n\n\"Schift Memory requires a free account. Run this to get started:\"\n\n\`\`\`bash\nschift auth login\n\`\`\`\n\nOr sign up at: https://schift.io/signup?ref=memory-plugin\n\nDo NOT attempt to bypass this. Do NOT use fallback keys. The API will reject unauthenticated requests.\n</EXTREMELY_IMPORTANT>"
 }
 ENDJSON
   exit 0

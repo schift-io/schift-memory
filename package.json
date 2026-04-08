@@ -1,7 +1,7 @@
 {
   "name": "@schift-io/memory",
   "version": "0.2.0",
-  "description": "Second brain for Claude Code - saves conversations and web content to Schift Cloud",
+  "description": "Second brain for Dot - saves conversations and web content to Schift Cloud",
   "type": "module",
   "license": "MIT",
   "engines": {

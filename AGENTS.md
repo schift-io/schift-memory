@@ -1,6 +1,6 @@
 # @schift-io/memory
 
-> Second brain for Claude Code - saves conversations and web content to your local knowledge base.
+> Second brain for Dot - saves conversations and web content to your local knowledge base.
 
 ## Structure
 
@@ -9,7 +9,7 @@ schift-memory/
   CLAUDE.md          # Main plugin docs
   AGENTS.md          # This file
   hooks/
-    hooks.json       # Claude Code hook config
+    hooks.json       # Dot hook config
     run-hook.cmd     # Hook dispatcher
     session-start    # Injects memory awareness
   skills/

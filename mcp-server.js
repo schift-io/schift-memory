@@ -13,15 +13,21 @@ import { readFileSync } from 'fs';
 import { homedir } from 'os';
 import { join } from 'path';
 
-const AUTH_PATH = join(homedir(), '.schift', 'memory', 'config', 'auth.json');
+const CLI_CONFIG = join(homedir(), '.schift', 'config.json');
+const MEMORY_AUTH = join(homedir(), '.schift', 'memory', 'config', 'auth.json');
 
 function loadAuth() {
+  // 1. schift CLI config (primary)
   try {
-    const data = JSON.parse(readFileSync(AUTH_PATH, 'utf-8'));
-    return { key: data.api_key, url: data.cloud_url || 'https://api.schift.io' };
-  } catch {
-    return null;
-  }
+    const data = JSON.parse(readFileSync(CLI_CONFIG, 'utf-8'));
+    if (data.api_key) return { key: data.api_key, url: data.api_url || 'https://api.schift.io' };
+  } catch {}
+  // 2. memory plugin config (fallback)
+  try {
+    const data = JSON.parse(readFileSync(MEMORY_AUTH, 'utf-8'));
+    if (data.api_key) return { key: data.api_key, url: data.cloud_url || 'https://api.schift.io' };
+  } catch {}
+  return null;
 }
 
 async function apiCall(path, body) {

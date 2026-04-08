@@ -12,10 +12,10 @@
 ## Data Flow
 
 ```
-User conversation (Claude Code)
+User conversation (Dot)
     |
     v
-[Hook: SessionStart] -- checks ~/.schift/memory/config/auth.json
+[Hook: SessionStart] -- checks ~/.schift/config.json (fallback: ~/.schift/memory/config/auth.json)
     |
     |-- no auth --> "Sign up at schift.io/signup" (BLOCKED)
     |
@@ -24,7 +24,7 @@ User conversation (Claude Code)
     +---> User shares URL ---> memory-save skill
     |         |
     |         v
-    |     WebFetch content (Claude Code built-in)
+    |     WebFetch content (Dot built-in)
     |         |
     |         v
     |     POST api.schift.io/v1/local-memory/ingest-url
@@ -63,7 +63,7 @@ User conversation (Claude Code)
 ```
 ~/.schift/memory/
   config/
-    auth.json             # API key (required)
+    auth.json             # API key (auto-migrated to ~/.schift/config.json)
   sources/
     web/                  # Fetched web pages (markdown replica)
   compact/

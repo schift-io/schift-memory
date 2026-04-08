@@ -2,14 +2,13 @@
 # SessionStart hook: sync unsynced local files to Schift Cloud
 set -euo pipefail
 
-AUTH_FILE="$HOME/.schift/memory/config/auth.json"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 MEMORY_ROOT="$HOME/.schift/memory"
 
-# Gate: no auth = skip
-[ ! -f "$AUTH_FILE" ] && exit 0
-
-api_key=$(node -e "try{process.stdout.write(JSON.parse(require('fs').readFileSync('${AUTH_FILE}','utf-8')).api_key||'')}catch{}" 2>/dev/null || echo "")
-cloud_url=$(node -e "try{process.stdout.write(JSON.parse(require('fs').readFileSync('${AUTH_FILE}','utf-8')).cloud_url||'https://api.schift.io')}catch{process.stdout.write('https://api.schift.io')}" 2>/dev/null || echo "https://api.schift.io")
+# Unified auth
+source "${SCRIPT_DIR}/read-auth.sh"
+api_key="$SCHIFT_API_KEY"
+cloud_url="$SCHIFT_API_URL"
 
 [ -z "$api_key" ] && exit 0
 
